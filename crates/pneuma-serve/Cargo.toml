@@ -1,0 +1,34 @@
+[package]
+name = "pneuma-serve"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The HTTP surface, shutdown and scheduling every pneuma binary shares"
+
+[dependencies]
+pneuma-telemetry = { path = "../pneuma-telemetry" }
+axum = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# `net` to bind, `signal` for SIGTERM, `time` for the ticker, `rt` and `macros`
+# because a binary needs a runtime and this crate's own tests need one.
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "net", "signal", "time"] }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+# `test-util` for `start_paused`, which is what makes an hourly schedule a
+# microsecond test. A dev-dependency, so the feature cannot reach a binary:
+# `tokio::time::pause` in production would stop the clock advancing at all.
+tokio = { workspace = true, features = ["test-util"] }
+# One integration test makes a real request against a really bound port, which
+# is the one thing `ServiceExt::oneshot` cannot show. No TLS feature: it fetches
+# `http://127.0.0.1`, and `rustls-tls` would pull rustls, ring, tokio-rustls,
+# hyper-rustls and webpki into this crate's dev graph -- build time on the new
+# CI job and audit surface for `cargo deny`, for a request that never uses them.
+reqwest = { version = "0.12", default-features = false }
+http-body-util = { workspace = true }
+tower = { workspace = true }
