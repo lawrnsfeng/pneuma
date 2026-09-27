@@ -1,0 +1,15 @@
+[package]
+name = "pneuma-interpreter"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Pipeline scheduling decisions — which step runs next, and with what input"
+
+[dependencies]
+pneuma-core = { path = "../pneuma-core" }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_yaml = { workspace = true }

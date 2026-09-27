@@ -1,0 +1,28 @@
+[package]
+name = "pneuma-transport"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The broker clients pneuma-nats and pneuma-amqp are forbidden to hold"
+
+# `async-nats` is deliberately absent: the NATS half arrives with the crate that
+# needs it. The two rules a broker client gets wrong -- settling a message and
+# staying connected -- are decided in `delivery` and `supervise`, which touch
+# none of these.
+[dependencies]
+# The naming crate. Every queue name that reaches a broker has been through it,
+# so a name that would hang a declaration cannot be built here either.
+pneuma-amqp = { path = "../pneuma-amqp" }
+futures-lite = { workspace = true }
+lapin = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync", "time"] }
+
+[dev-dependencies]
+# The tests reach the broker directly for setup and for reading a queue's depth
+# back. Deliberately not library methods: `delete_queue` is a foot-gun to hand a
+# service, and a message count is a thing a test asserts rather than a thing
+# this crate does.
+lapin = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

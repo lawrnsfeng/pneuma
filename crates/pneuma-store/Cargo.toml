@@ -1,0 +1,51 @@
+[package]
+name = "pneuma-store"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Repositories for the run and noderun records, in Postgres and MongoDB"
+
+[dependencies]
+pneuma-core = { path = "../pneuma-core" }
+# Declared here rather than in the workspace table, with the runtime and driver
+# features pneuma-core deliberately does not take. Cargo unifies features across
+# a build, so whether this reaches pneuma-core is a question the CI guard
+# answers rather than a comment.
+sqlx = { version = "0.8", default-features = false, features = [
+    "derive", "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json",
+    # `migrate` so the migrations can be embedded here and run by
+    # `pneuma-migrate`, per the original plan. The gateway enables this
+    # feature and never uses it; this crate is where it earns its place.
+    #
+    # `macros` is what `sqlx::migrate!` needs, and it does *not* reintroduce
+    # what the original plan rules out. The objection there is to `query!` and
+    # `query_as!`, which require a live database at compile time; `migrate!`
+    # only embeds files from a directory. Every query in this crate stays a
+    # runtime `include_str!`, and enabling the feature does not change that.
+    "migrate",
+    "macros",
+] }
+# The Mongo half. `bson` comes with it; both are needed for the run document.
+# `compat-3-3-0` and a bson major are both mandatory -- the crate refuses to
+# compile without them, to make a future major bump an explicit choice.
+mongodb = { version = "3", default-features = false, features = [
+    "rustls-tls", "bson-3", "compat-3-3-0",
+] }
+pneuma-telemetry = { path = "../pneuma-telemetry" }
+async-trait = { workspace = true }
+# `time` only, for the deadline each probe imposes on itself.
+# `pneuma_telemetry::run_liveness_checks` awaits every ping in turn with no
+# timeout of its own -- deliberately, because the right value is known here and
+# not there -- so without this one unresponsive dependency hangs the whole
+# `liveness` endpoint and the failure reads as a dead process.
+tokio = { workspace = true, features = ["time"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+compact_str = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+futures = "0.3"

@@ -1,0 +1,37 @@
+[package]
+name = "pneuma-mirror"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Writes a run's steps into the node_run table, for either transport"
+
+[dependencies]
+# The join between the two, which is the whole reason this crate exists.
+# `pneuma-runner` may not link a database -- `scripts/forbid-deps.sh` holds it
+# to that -- and `pneuma-store` has no business knowing what a run is. So the
+# adapter cannot live in either, and the alternative to a crate here is the same
+# sixty lines in both binaries, drifting.
+pneuma-runner = { path = "../pneuma-runner" }
+pneuma-store = { path = "../pneuma-store" }
+pneuma-core = { path = "../pneuma-core" }
+sqlx = { version = "0.8", default-features = false, features = [
+    "derive", "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json",
+] }
+uuid = { workspace = true, features = ["v5"] }
+thiserror = { workspace = true }
+# For the deadline on `ready_within`, and nothing else. The writes themselves
+# name no runtime -- `sqlx`'s `runtime-tokio` feature already decided that.
+tokio = { workspace = true, features = ["time"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+serde_json = { workspace = true }
+# `tests/mirror.rs` drives a run that stops mid-step and then asks the janitor's
+# own query whether it can see it -- which needs the driver, a pipeline to
+# resolve, the envelope a dispatch carries, and a clock to age the rows past the
+# staleness threshold.
+pneuma-proto = { path = "../pneuma-proto" }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }

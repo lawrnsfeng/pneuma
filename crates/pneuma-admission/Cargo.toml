@@ -1,0 +1,55 @@
+[package]
+name = "pneuma-admission"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The ingress that admits runs to the fair dispatch queue"
+
+[dependencies]
+pneuma-core = { path = "../pneuma-core" }
+# For `Accepted`, and because this service enqueues: the `Submissions` trait
+# below is a seam for testing the router without a database, not a way to avoid
+# depending on the store. Inventing a second copy of `Accepted` here to dodge
+# the dependency is the duplication that has already gone wrong once in this
+# crate, with `Submission` against the runner's `RunRequest`.
+pneuma-store = { path = "../pneuma-store" }
+pneuma-config = { path = "../pneuma-config" }
+pneuma-serve = { path = "../pneuma-serve" }
+async-trait = { workspace = true }
+axum = { workspace = true }
+chrono = { workspace = true }
+# The binary's own needs: a pool to reach the queue, a client to reach Restate,
+# a runtime to hold both, and a token to stop them together.
+sqlx = { version = "0.8", default-features = false, features = [
+    "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json", "macros",
+] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { workspace = true, features = [
+    "rt", "rt-multi-thread", "macros", "net", "signal", "sync", "time", "io-util",
+] }
+tokio-util = { workspace = true }
+pneuma-fairness = { path = "../pneuma-fairness" }
+pneuma-proto = { path = "../pneuma-proto" }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# Only `tests/e2e.rs` needs this, and only to stand the *other* half of the path
+# up in-process: the SDK endpoint the Restate container invokes. The library
+# depends on it in neither direction -- admission talks to Restate over HTTP and
+# knows nothing about the handler on the far side -- which is exactly why the
+# request body between them is worth an end-to-end test rather than a shared
+# type.
+pneuma-restate = { path = "../pneuma-restate" }
+# And the mirror the runner writes through, so this test can assert that the
+# run it drove left a `node_run` row behind.
+pneuma-mirror = { path = "../pneuma-mirror" }
+sqlx = { version = "0.8", default-features = false, features = [
+    "postgres", "runtime-tokio", "tls-rustls", "chrono", "json", "macros",
+] }
+serde_yaml = { workspace = true }
+http-body-util = { workspace = true }
+tower = { workspace = true }

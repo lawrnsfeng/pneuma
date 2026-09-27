@@ -1,0 +1,52 @@
+name: wiki
+
+# Builds the technical wiki on every pull request, so a broken link is caught
+# before merge, and publishes it to GitHub Pages from `main`.
+#
+# One-time setup, which is a repository setting and not something a workflow can
+# do: Settings -> Pages -> Source: "GitHub Actions".
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    paths: ["docs/**", "mkdocs.yml", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Pinned below 10: Material's own notice says MkDocs 2.0 breaks plugins
+      # and themes with no migration path, so an unpinned install is a build
+      # that breaks on an unrelated day.
+      - run: pip install "mkdocs-material>=9.5,<10" "mkdocs<2"
+      - name: Build (broken links fail the build)
+        run: mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

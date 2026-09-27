@@ -1,0 +1,14 @@
+[package]
+name = "pneuma-amqp"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "AMQP queue-name and routing-key validation — no client, no I/O"
+
+[dependencies]
+compact_str = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

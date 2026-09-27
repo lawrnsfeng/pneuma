@@ -1,0 +1,22 @@
+[package]
+name = "restate-spike"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Standalone on purpose: an empty [workspace] table excludes this crate from
+# the main workspace, so `cargo clippy --workspace`, `cargo test --workspace`
+# and the 100% coverage gate never see it. Spike code is throwaway and must
+# not be held to the production crate's standards, nor dilute its metrics.
+[workspace]
+
+[dependencies]
+pneuma-core = { path = "../../crates/pneuma-core" }
+restate-sdk = "0.11.1"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+reqwest = { version = "0.12", features = ["json"] }
+axum = "0.8"
+tracing-subscriber = "0.3"

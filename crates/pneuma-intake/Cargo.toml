@@ -1,0 +1,40 @@
+[package]
+name = "pneuma-intake"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "AMQP ingress: a pipeline id becomes a run document and a submission"
+
+[dependencies]
+pneuma-amqp = { path = "../pneuma-amqp" }
+pneuma-transport = { path = "../pneuma-transport" }
+pneuma-config = { path = "../pneuma-config" }
+pneuma-core = { path = "../pneuma-core" }
+pneuma-proto = { path = "../pneuma-proto" }
+pneuma-serve = { path = "../pneuma-serve" }
+pneuma-store = { path = "../pneuma-store" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+# The same pin `pneuma-store` uses. Needed here for `bson` alone -- the run
+# document is built as a `Document` and never inserted from this module -- but
+# the versions have to agree or the two crates' `Document` types are different
+# types with the same name.
+mongodb = { version = "3", default-features = false, features = [
+    "rustls-tls", "bson-3", "compat-3-3-0",
+] }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = [
+    "rt", "rt-multi-thread", "macros", "net", "signal", "sync", "time",
+] }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+axum = { workspace = true }
+lapin = { workspace = true }
+pneuma-amqp = { path = "../pneuma-amqp" }
+serde_yaml = { workspace = true }
