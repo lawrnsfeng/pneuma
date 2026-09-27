@@ -1,0 +1,46 @@
+[package]
+name = "pneuma-migrate"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Schema fingerprinting and baselining for a database the original migration tool already migrated"
+
+[dependencies]
+thiserror = { workspace = true }
+# Only what this crate uses. Introspection issues four queries returning text
+# and integers and decodes none of the richer types, so no `uuid`/`chrono`/
+# `json` here even though `pneuma-store` needs them.
+#
+# An earlier comment here claimed this matched `pneuma-store`'s feature set "so
+# a workspace build does not resolve two different sqlx configurations". Wrong
+# twice: `pneuma-store` also enables `macros`, so the sets were never the same,
+# and Cargo unions features across a build regardless, so matching them is a
+# build-cost preference rather than a correctness one.
+#
+# `migrate` is this crate's own requirement, not an echo of the store's:
+# `baseline` runs the migrations into a scratch schema to derive what they
+# produce, and reuses sqlx's `Migrate::ensure_migrations_table` and
+# `list_applied_migrations` rather than keeping a second copy of a table shape
+# sqlx owns. `macros` is deliberately *not* enabled -- `sqlx::migrate!` embeds
+# the files in `pneuma-store`, and this crate is handed the `Migrator`.
+sqlx = { version = "0.8", default-features = false, features = [
+    "postgres", "runtime-tokio", "tls-rustls", "migrate",
+] }
+# The Mongo half. Same feature set as `pneuma-store` -- `compat-3-3-0` and a
+# bson major are both mandatory, the crate refuses to build without them.
+mongodb = { version = "3", default-features = false, features = [
+    "rustls-tls", "bson-3", "compat-3-3-0",
+] }
+# For `TryStreamExt::try_next` over an aggregation cursor.
+futures-util = { version = "0.3", default-features = false }
+clap = { workspace = true }
+# The binary needs a runtime; the library does not name one.
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+# `pneuma_store::migrator()` is the only source of the `Migrator` that
+# `baseline` compares against, so the CLI is its first production caller. It
+# was a dev-dependency while only the tests could reach `baseline`.
+pneuma-store = { path = "../pneuma-store" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
