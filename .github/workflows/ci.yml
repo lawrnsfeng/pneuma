@@ -332,7 +332,9 @@ jobs:
     # RabbitMQ, because `tests/supervise.rs` and `tests/service.rs` drive a real
     # attach/pump/settle cycle against it -- the two things a fake cannot
     # answer: whether a closed connection or a vanished queue really ends the
-    # attachment, and whether a rejected message really reaches the DLQ.
+    # attachment, and whether a rejected message really reaches the DLQ. Mongo
+    # alongside it, because `tests/service.rs` reads back the run document it
+    # wrote and asserts the status the service settles it to.
     services:
       rabbitmq:
         image: rabbitmq:3.13
@@ -340,6 +342,12 @@ jobs:
         options: >-
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 10s --health-timeout 10s --health-retries 12
+      mongo:
+        image: mongo:5.0.28
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.97.1
@@ -349,6 +357,7 @@ jobs:
         run: ./scripts/coverage.sh pneuma-intake --out xml
         env:
           PNEUMA_TEST_AMQP_URL: amqp://guest:guest@127.0.0.1:5672/%2f
+          PNEUMA_TEST_MONGO_URL: mongodb://127.0.0.1:27017
       - uses: actions/upload-artifact@v4
         if: always()
         with:
