@@ -1,0 +1,36 @@
+---
+pipeline_id: invoice.page.default
+start: A
+components:
+  - node_id: A
+    name: invoice.page.default.A
+    version: latest
+    type: Model
+    children:
+      - B
+  - node_id: B
+    name: invoice.page.default.B
+    version: latest
+    type: Model
+    children:
+      - X
+  - node_id: X
+    name: dict_aggregator
+    version: latest
+    type: DictAggregator
+    start:
+      C: key_C
+      D: key_D
+    children:
+      - end
+    components:
+      - node_id: C
+        name: invoice.page.default.C
+        type: Model
+        children:
+          - end
+      - node_id: D
+        name: invoice.page.default.D
+        type: Model
+        children:
+          - end
