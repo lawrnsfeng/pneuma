@@ -1,0 +1,46 @@
+[package]
+name = "pneuma-janitor"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The janitor's passes over the run stores: archive, expire, and find stalled work"
+
+[[bin]]
+name = "pneuma-janitor"
+path = "src/main.rs"
+
+[dependencies]
+pneuma-store = { path = "../pneuma-store" }
+pneuma-config = { path = "../pneuma-config" }
+pneuma-serve = { path = "../pneuma-serve" }
+pneuma-gateway-client = { path = "../pneuma-gateway-client" }
+pneuma-telemetry = { path = "../pneuma-telemetry" }
+secrecy = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+# The binary's own I/O. The library half needs none of it -- every query it
+# issues belongs to `pneuma-store` -- which is why these arrived only when the
+# service did.
+mongodb = { version = "3", default-features = false, features = [
+    "rustls-tls", "bson-3", "compat-3-3-0",
+] }
+sqlx = { version = "0.8", default-features = false, features = [
+    "derive", "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json",
+] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "time"] }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+# The tests stand up a stub gateway and drive the real databases. Everything
+# else they need is now a dependency of the binary, so only these two are here.
+axum = { workspace = true }
+serde_json = { workspace = true }
+pneuma-telemetry = { path = "../pneuma-telemetry" }
+# `v4` explicitly: the tests call `Uuid::new_v4()`, and without this it compiles
+# only because the `mongodb` dependency happens to enable that feature and Cargo
+# unifies them. Reworking either dependency would break this crate's test build
+# with an error pointing nowhere near the cause.
+uuid = { workspace = true, features = ["v4"] }
