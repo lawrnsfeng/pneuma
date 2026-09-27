@@ -1,0 +1,51 @@
+[package]
+name = "pneuma-driver"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The broker-portability driver: pneuma_runner::drive over NATS"
+
+[dependencies]
+pneuma-config = { path = "../pneuma-config" }
+pneuma-core = { path = "../pneuma-core" }
+pneuma-proto = { path = "../pneuma-proto" }
+pneuma-runner = { path = "../pneuma-runner" }
+pneuma-serve = { path = "../pneuma-serve" }
+pneuma-telemetry = { path = "../pneuma-telemetry" }
+pneuma-store = { path = "../pneuma-store" }
+# The audit mirror, and the pool it writes through. Shared with
+# `pneuma-restate` rather than reimplemented: two copies of the translation is
+# how a fan-out comes to record differently under the broker than under Restate.
+pneuma-mirror = { path = "../pneuma-mirror" }
+sqlx = { version = "0.8", default-features = false, features = [
+    "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json",
+] }
+# The same pin `pneuma-store` uses, for `bson` alone -- the run document is read
+# as a `Document` here. The versions have to agree or the two crates' `Document`
+# types are different types with the same name.
+mongodb = { version = "3", default-features = false, features = [
+    "rustls-tls", "bson-3", "compat-3-3-0",
+] }
+async-nats = { workspace = true }
+compact_str = { workspace = true }
+secrecy = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+futures-lite = { workspace = true }
+tokio = { workspace = true, features = [
+    "rt", "rt-multi-thread", "macros", "net", "signal", "sync", "time",
+] }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+compact_str = { workspace = true }
+# `tests/service.rs` migrates a schema of its own and reads back the rows the
+# mirror wrote, which is the half of this path a fake cannot answer.
+sqlx = { version = "0.8", default-features = false, features = [
+    "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json", "macros",
+] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+futures-lite = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
