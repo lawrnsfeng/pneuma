@@ -1,0 +1,66 @@
+site_name: pneuma
+site_description: Technical wiki and design record for the pneuma pipeline runner
+repo_url: https://github.com/lawrnsfeng/pneuma
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Light mode}
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+# Links from the wiki into source files (`crates/...`, `scripts/...`) are
+# legitimate on GitHub and have no page here; they render as plain text rather
+# than failing the build. Anything that *should* resolve still does, and
+# `--strict` turns every other warning into an error.
+validation:
+  links:
+    not_found: info
+    absolute_links: info
+    unrecognized_links: info
+
+nav:
+  - Home: README.md
+  - Context: context.md
+  - As-built:
+      - Overview: as-built/overview.md
+      - Protocols: as-built/protocols.md
+      - Component API: as-built/component-api.md
+      - Flows: as-built/flows.md
+      - Storage: as-built/storage.md
+  - V2 design:
+      - Overview: v2/overview.md
+      - Rationale: v2/rationale.md
+      - Migration: v2/migration.md
+  - Decisions: decisions.md
+  - Verification: verification.md
+  - Runbook: runbook.md
+  - Design record:
+      - Strategy: STRATEGY.md
+      - Core pillars: CORE-PILLARS.md
+      - Concurrency and direction: CONCURRENCY-AND-DIRECTION.md
+      - Pregel notes: PREGEL-NOTES.md
+      - Framework foundations: FRAMEWORK-FOUNDATIONS.md
+      - Broker portability: BROKER-PORTABILITY.md
+      - Database portability: DATABASE-PORTABILITY.md
+      - Landscape and evolution: LANDSCAPE-AND-EVOLUTION.md
+      - Architecture V2: ARCHITECTURE-V2.md
+      - Changelog: CHANGELOG.md
