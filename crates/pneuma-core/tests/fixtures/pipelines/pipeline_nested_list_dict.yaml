@@ -1,0 +1,166 @@
+---
+pipeline_id: freeform.doc.commercial-invoice-list-dict
+start: A
+components:
+  - node_id: A
+    name: freeform.page.commercial-invoice.A
+    version: latest
+    type: Model
+    children:
+      - B
+  - node_id: B
+    name: freeform.page.commercial-invoice.B
+    version: latest
+    type: Model
+    children:
+      - X
+  - node_id: X
+    name: freeform.page.commercial-invoice.X
+    version: latest
+    type: DictAggregator
+    start:
+      C: key_C
+      D: key_D
+    children:
+      - Y
+    components:
+      - node_id: C
+        name: freeform.page.commercial-invoice.C
+        type: Model
+        children:
+          - P
+      - node_id: D
+        name: freeform.page.commercial-invoice.D
+        type: Model
+        children:
+          - M
+      - node_id: M
+        name: freeform.page.commercial-invoice.M
+        version: latest
+        type: ListAggregator  # list in dict
+        start: N
+        children:
+          - end
+        components:
+          - node_id: N
+            name: freeform.page.commercial-invoice.N
+            version: latest
+            type: Model
+            children:
+              - Q
+          - node_id: Q
+            name: freeform.page.commercial-invoice.Q
+            version: latest
+            type: ListAggregator  # list in list in dict
+            start: R
+            children:
+              - end
+            components:
+              - node_id: R
+                name: freeform.page.commercial-invoice.R
+                version: latest
+                type: Model
+                children:
+                  - end
+      - node_id: P
+        name: freeform.page.commercial-invoice.P
+        version: latest
+        type: DictAggregator  # dict in dict
+        start:
+          J: key_J
+        children:
+          - end
+        components:
+          - node_id: J
+            name: freeform.page.commercial-invoice.J
+            type: Model
+            children:
+              - K
+          - node_id: K
+            name: freeform.page.commercial-invoice.K
+            version: latest
+            type: ListAggregator  # list in dict in dict
+            start: S
+            children:
+              - end
+            components:
+              - node_id: S
+                name: freeform.page.commercial-invoice.S
+                version: latest
+                type: Model
+                children:
+                  - end
+  - node_id: Y
+    name: freeform.page.commercial-invoice.Y
+    version: latest
+    type: ListAggregator
+    start: E
+    children:
+      - Z
+    components:
+      - node_id: E
+        name: freeform.page.commercial-invoice.E
+        version: latest
+        type: Model
+        children:
+          - F
+      - node_id: F
+        name: freeform.page.commercial-invoice.F
+        version: latest
+        type: Model
+        children:
+          - L
+      - node_id: L
+        name: freeform.page.commercial-invoice.L
+        version: latest
+        type: DictAggregator  # dict in list
+        start:
+          G: key_G
+        children:
+          - W
+        components:
+          - node_id: G
+            name: freeform.page.commercial-invoice.G
+            type: Model
+            children:
+              - H
+          - node_id: H
+            name: freeform.page.commercial-invoice.H
+            version: latest
+            type: ListAggregator  # list in dict in list
+            start: I
+            children:
+              - end
+            components:
+              - node_id: I
+                name: freeform.page.commercial-invoice.I
+                version: latest
+                type: Model
+                children:
+                  - end
+      - node_id: W
+        name: freeform.page.commercial-invoice.ocr
+        version: latest
+        type: ListAggregator  # list in list
+        start: T
+        children:
+          - O
+        components:
+          - node_id: T
+            name: freeform.page.commercial-invoice.kv
+            version: latest
+            type: Model
+            children:
+              - end
+      - node_id: O
+        name: freeform.page.commercial-invoice.kv
+        version: latest
+        type: Model
+        children:
+          - end
+  - node_id: Z
+    name: freeform.page.commercial-invoice.Z
+    version: latest
+    type: Model
+    children:
+      - end

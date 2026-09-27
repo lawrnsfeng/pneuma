@@ -1,0 +1,17 @@
+# Pinned so that "the command CI runs and the command a developer runs are the
+# same command" -- `scripts/coverage.sh`'s stated reason for existing -- is true
+# of the compiler too, not just the script.
+#
+# the original plan adopted the opposite (no toolchain file, CI on
+# `dtolnay/rust-toolchain@stable`) to match the gateway's convention, where
+# the version is pinned in a Dockerfile instead. That reasoning does not carry:
+# this workspace has no Dockerfiles yet, so there was nothing pinning anything,
+# and `clippy -D warnings` plus a 100% coverage gate are both version-sensitive
+# in a way a REST service's build is not. A new lint in a new stable release
+# fails an unrelated pull request, and the failure is not reproducible from the
+# commit that saw it.
+#
+# Recorded in the design notes rather than left as a silent reversal.
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy"]

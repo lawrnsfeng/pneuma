@@ -1,0 +1,113 @@
+{
+  "contains/array_hit": {
+    "result": true
+  },
+  "contains/array_miss": {
+    "result": false
+  },
+  "contains/array_number": {
+    "result": false
+  },
+  "contains/bool": {
+    "raises": "TypeError"
+  },
+  "contains/null": {
+    "raises": "TypeError"
+  },
+  "contains/number": {
+    "raises": "TypeError"
+  },
+  "contains/object_hit": {
+    "result": true
+  },
+  "contains/object_miss": {
+    "result": false
+  },
+  "contains/string_hit": {
+    "result": true
+  },
+  "contains/string_miss": {
+    "result": false
+  },
+  "equals/array": {
+    "raises": "TypeError"
+  },
+  "equals/bool": {
+    "result": true
+  },
+  "equals/null": {
+    "raises": "TypeError"
+  },
+  "equals/number_hit": {
+    "result": true
+  },
+  "equals/number_miss": {
+    "result": false
+  },
+  "equals/number_nonnumeric": {
+    "raises": "ValueError"
+  },
+  "equals/object": {
+    "raises": "TypeError"
+  },
+  "equals/string_hit": {
+    "result": true
+  },
+  "equals/string_miss": {
+    "result": false
+  },
+  "is_empty/array_empty": {
+    "result": true
+  },
+  "is_empty/array_full": {
+    "result": false
+  },
+  "is_empty/bool": {
+    "raises": "TypeError"
+  },
+  "is_empty/null": {
+    "result": true
+  },
+  "is_empty/number": {
+    "raises": "TypeError"
+  },
+  "is_empty/object_empty": {
+    "result": true
+  },
+  "is_empty/object_full": {
+    "result": false
+  },
+  "is_empty/string_empty": {
+    "result": true
+  },
+  "is_empty/string_full": {
+    "result": false
+  },
+  "is_not_empty/array_empty": {
+    "result": false
+  },
+  "is_not_empty/array_full": {
+    "result": true
+  },
+  "is_not_empty/bool": {
+    "raises": "TypeError"
+  },
+  "is_not_empty/null": {
+    "result": false
+  },
+  "is_not_empty/number": {
+    "raises": "TypeError"
+  },
+  "is_not_empty/object_empty": {
+    "result": false
+  },
+  "is_not_empty/object_full": {
+    "result": true
+  },
+  "is_not_empty/string_empty": {
+    "result": false
+  },
+  "is_not_empty/string_full": {
+    "result": true
+  }
+}

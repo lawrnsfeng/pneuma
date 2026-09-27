@@ -1,0 +1,66 @@
+# `cargo deny check` ran in CI and never in `scripts/verify.sh`, so nobody had
+# run it locally in a long time and every category below was already failing.
+# The exceptions are therefore documented rather than assumed: each one names
+# the crate that needs it and why no narrower answer exists.
+
+[graph]
+all-features = true
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "Unicode-3.0",
+    "BSD-3-Clause",
+    # The whole `amq-rs` family, reached through lapin: `amq-protocol` and its
+    # `-tcp`, `-types` and `-uri` crates, plus `tcp-stream`, `rustls-connector`
+    # and `async-rs`. Seven crates, one author, one licence.
+    #
+    # BSD-2-Clause is BSD-3-Clause without the no-endorsement clause -- strictly
+    # fewer obligations than a licence already on this list, OSI-approved and
+    # FSF Free/Libre. The original plan predicted that every new pin would be
+    # MIT/Apache-2.0 and that this file would need no change; that was an
+    # assumption rather than a check, and this is the check.
+    "BSD-2-Clause",
+    "ISC",
+    "Zlib",
+    # `tiny-keccak`, reached through mongodb -> macro_magic -> const-random.
+    # A public-domain dedication; nothing to comply with.
+    "CC0-1.0",
+    # `webpki-roots` (both 0.26 and 1.0), reached through sqlx-core. The
+    # Mozilla CA root store is published under this; it is a permissive data
+    # licence and there is no alternative source for the same roots.
+    "CDLA-Permissive-2.0",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# The workspace's own crates depend on each other by path with no version --
+# `pneuma-core = { path = "../pneuma-core" }` -- and cargo-deny counts each as
+# a wildcard. It is not the hazard the rule is for: `wildcards = "deny"` exists
+# to stop `foo = "*"` from crates.io floating under you, and a path dependency
+# inside one workspace resolves to the source in the same commit. Without this
+# every crate that depends on a sibling fails, which is seven of fourteen.
+allow-wildcard-paths = true
+
+[advisories]
+ignore = [
+    # RUSTSEC-2023-0071 -- Marvin Attack, a timing sidechannel in `rsa`.
+    #
+    # Reached only as restate-sdk -> restate-sdk-shared-core -> jsonwebtoken ->
+    # rsa. It cannot be dropped from here: `request_identity` is hard-coded in
+    # restate-sdk 0.11.1's dependency on shared-core (not an optional feature
+    # this workspace selects), and the advisory itself says "no safe upgrade is
+    # available".
+    #
+    # The exposure is Restate's request-signature verification, which needs an
+    # attacker able to observe its timing. pneuma uses no RSA of its own.
+    # Revisit when restate-sdk changes; this entry should not outlive that.
+    "RUSTSEC-2023-0071",
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

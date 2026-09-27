@@ -1,0 +1,28 @@
+---
+pipeline_id: freeform.doc.commercial-invoice-case3
+start:
+  A: key_A
+  D: key_D
+components:
+  - node_id: A
+    name: freeform.page.commercial-invoice.A
+    type: Model
+    children:
+      - B
+      - C
+  - node_id: B
+    name: freeform.page.commercial-invoice.B
+    type: Model
+    children:
+      - C
+      - D
+  - node_id: C
+    name: freeform.page.commercial-invoice.C
+    type: Model
+    children:
+      - D
+  - node_id: D
+    name: freeform.page.commercial-invoice.D
+    type: Model
+    children:
+      - end

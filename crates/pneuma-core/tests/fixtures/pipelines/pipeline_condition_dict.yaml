@@ -1,0 +1,68 @@
+---
+pipeline_id: freeform.doc.commercial-invoice-condition-dict
+start: A
+components:
+  - node_id: A
+    name: freeform.page.commercial-invoice.A
+    version: latest
+    type: Model
+    children:
+      - Dict
+  - node_id: Dict
+    name: freeform.page.commercial-invoice.Dict
+    version: latest
+    type: DictAggregator
+    start:
+      B: key_B
+      C: key_C
+    children:
+      - end
+    components:
+      - node_id: B
+        name: freeform.page.commercial-invoice.B
+        type: Model
+        children:
+          - Con1
+      - node_id: C
+        name: freeform.page.commercial-invoice.C
+        type: Model
+        children:
+          - Con2
+      - node_id: Con1
+        type: Condition
+        conditions:
+          - key: resultB
+            type: equals
+            value: page.B
+        children:
+          on_true: E
+          on_false: F
+      - node_id: Con2
+        type: Condition
+        conditions:
+          - key: resultC
+            type: contains
+            value: page.C
+        children:
+          on_true: T
+          on_false: Z
+      - node_id: E
+        name: freeform.page.commercial-invoice.E
+        type: Model
+        children:
+          - end
+      - node_id: F
+        name: freeform.page.commercial-invoice.F
+        type: Model
+        children:
+          - end
+      - node_id: T
+        name: freeform.page.commercial-invoice.T
+        type: Model
+        children:
+          - end
+      - node_id: Z
+        name: freeform.page.commercial-invoice.Z
+        type: Model
+        children:
+          - end

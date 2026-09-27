@@ -1,0 +1,114 @@
+{
+  "A": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.A",
+    "next_nodes": [
+      "R",
+      "B"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "List"
+  },
+  "B": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.B",
+    "next_nodes": [
+      "G"
+    ],
+    "nth": 7,
+    "num_prerequisites": 2,
+    "parent_id": "List"
+  },
+  "Con1": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.Con1",
+    "next_nodes": [
+      "Con2",
+      "E"
+    ],
+    "nth": 3,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "Con2": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.Con2",
+    "next_nodes": [
+      "Con3",
+      "E"
+    ],
+    "nth": 4,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "Con3": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.Con3",
+    "next_nodes": [
+      "Con4",
+      "E"
+    ],
+    "nth": 5,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "Con4": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.Con4",
+    "next_nodes": [
+      "B",
+      "E"
+    ],
+    "nth": 6,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "E": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.E",
+    "next_nodes": [
+      "F"
+    ],
+    "nth": 8,
+    "num_prerequisites": 4,
+    "parent_id": "List"
+  },
+  "F": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.F",
+    "next_nodes": [],
+    "nth": 9,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "G": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.G",
+    "next_nodes": [],
+    "nth": 10,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "List": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": null,
+    "target_children": [
+      "F",
+      "G"
+    ]
+  },
+  "R": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.List.R",
+    "next_nodes": [
+      "Con1"
+    ],
+    "nth": 2,
+    "num_prerequisites": 1,
+    "parent_id": "List"
+  },
+  "Start": {
+    "full_path": "freeform.doc.commercial-invoice-condition-list.Start",
+    "next_nodes": [
+      "List"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": null
+  }
+}

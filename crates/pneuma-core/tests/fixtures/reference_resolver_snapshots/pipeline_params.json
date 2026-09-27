@@ -1,0 +1,38 @@
+{
+  "A": {
+    "full_path": "freeform.doc.commercial-invoice-params.A",
+    "next_nodes": [
+      "B",
+      "C"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": null
+  },
+  "B": {
+    "full_path": "freeform.doc.commercial-invoice-params.B",
+    "next_nodes": [
+      "C",
+      "D"
+    ],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": null
+  },
+  "C": {
+    "full_path": "freeform.doc.commercial-invoice-params.C",
+    "next_nodes": [
+      "D"
+    ],
+    "nth": 1,
+    "num_prerequisites": 2,
+    "parent_id": null
+  },
+  "D": {
+    "full_path": "freeform.doc.commercial-invoice-params.D",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 2,
+    "parent_id": null
+  }
+}

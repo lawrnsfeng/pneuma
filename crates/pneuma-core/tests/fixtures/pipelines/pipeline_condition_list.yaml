@@ -1,0 +1,83 @@
+---
+pipeline_id: freeform.doc.commercial-invoice-condition-list
+start: Start
+components:
+  - node_id: Start
+    name: freeform.doc.commercial-invoice.list
+    version: latest
+    type: Model
+    children:
+      - List
+  - node_id: List
+    name: freeform.page.commercial-invoice.Y
+    version: latest
+    type: ListAggregator
+    start: A
+    children:
+      - end
+    components:
+      - node_id: A
+        name: freeform.page.commercial-invoice.A
+        type: Model
+        children:
+          - R
+          - B
+      - node_id: R
+        name: freeform.page.commercial-invoice.R
+        type: Model
+        children:
+          - Con1
+      - node_id: Con1
+        type: Condition
+        conditions:
+          - key: equals
+            type: equals
+            value: value
+        children:
+          on_true: Con2
+          on_false: E
+      - node_id: Con2
+        type: Condition
+        conditions:
+          - key: contains
+            type: contains
+            value: value
+        children:
+          on_true: Con3
+          on_false: E
+      - node_id: Con3
+        type: Condition
+        conditions:
+          - key: isempty
+            type: is_empty
+        children:
+          on_true: Con4
+          on_false: E
+      - node_id: Con4
+        type: Condition
+        conditions:
+          - key: isnotempty
+            type: is_not_empty
+        children:
+          on_true: B
+          on_false: E
+      - node_id: B
+        name: freeform.page.commercial-invoice.B
+        type: Model
+        children:
+          - G
+      - node_id: E
+        name: freeform.page.commercial-invoice.E
+        type: Model
+        children:
+          - F
+      - node_id: F
+        name: freeform.page.commercial-invoice.F
+        type: Model
+        children:
+          - end
+      - node_id: G
+        name: freeform.page.commercial-invoice.G
+        type: Model
+        children:
+          - end

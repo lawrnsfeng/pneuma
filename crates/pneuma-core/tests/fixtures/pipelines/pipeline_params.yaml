@@ -1,0 +1,31 @@
+---
+pipeline_id: freeform.doc.commercial-invoice-params
+start:
+  A: key_A
+  D: key_D
+components:
+  - node_id: A
+    name: freeform.page.commercial-invoice.preprocessing
+    type: Model
+    children:
+      - B
+      - C
+    params:
+      key_1: <value_key_1>
+      key_2: <value_key_2>
+  - node_id: B
+    name: freeform.page.commercial-invoice.layout
+    type: Model
+    children:
+      - C
+      - D
+  - node_id: C
+    name: freeform.page.commercial-invoice.ocr
+    type: Model
+    children:
+      - D
+  - node_id: D
+    name: freeform.page.commercial-invoice.kv
+    type: Model
+    children:
+      - end

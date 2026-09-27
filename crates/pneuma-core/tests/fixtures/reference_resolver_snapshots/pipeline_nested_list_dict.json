@@ -1,0 +1,233 @@
+{
+  "A": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.A",
+    "next_nodes": [
+      "B"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": null
+  },
+  "B": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.B",
+    "next_nodes": [
+      "X"
+    ],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": null
+  },
+  "C": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.C",
+    "next_nodes": [
+      "P"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "X"
+  },
+  "D": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.D",
+    "next_nodes": [
+      "M"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "X"
+  },
+  "E": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.E",
+    "next_nodes": [
+      "F"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "Y"
+  },
+  "F": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.F",
+    "next_nodes": [
+      "L"
+    ],
+    "nth": 2,
+    "num_prerequisites": 1,
+    "parent_id": "Y"
+  },
+  "G": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.L.G",
+    "next_nodes": [
+      "H"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "L"
+  },
+  "H": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.L.H",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": "L",
+    "target_children": [
+      "I"
+    ]
+  },
+  "I": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.L.H.I",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "H"
+  },
+  "J": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.P.J",
+    "next_nodes": [
+      "K"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "P"
+  },
+  "K": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.P.K",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": "P",
+    "target_children": [
+      "S"
+    ]
+  },
+  "L": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.L",
+    "next_nodes": [
+      "W"
+    ],
+    "nth": 3,
+    "num_children": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Y",
+    "target_children": [
+      "H"
+    ]
+  },
+  "M": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.M",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": "X",
+    "target_children": [
+      "Q"
+    ]
+  },
+  "N": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.M.N",
+    "next_nodes": [
+      "Q"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "M"
+  },
+  "O": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.O",
+    "next_nodes": [],
+    "nth": 5,
+    "num_prerequisites": 1,
+    "parent_id": "Y"
+  },
+  "P": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.P",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": 1,
+    "num_prerequisites": 1,
+    "parent_id": "X",
+    "target_children": [
+      "K"
+    ]
+  },
+  "Q": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.M.Q",
+    "next_nodes": [],
+    "nth": 2,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": "M",
+    "target_children": [
+      "R"
+    ]
+  },
+  "R": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.M.Q.R",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "Q"
+  },
+  "S": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X.P.K.S",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "K"
+  },
+  "T": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.W.T",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "W"
+  },
+  "W": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y.W",
+    "next_nodes": [
+      "O"
+    ],
+    "nth": 4,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": "Y",
+    "target_children": [
+      "T"
+    ]
+  },
+  "X": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.X",
+    "next_nodes": [
+      "Y"
+    ],
+    "nth": 1,
+    "num_children": 2,
+    "num_prerequisites": 1,
+    "parent_id": null,
+    "target_children": [
+      "M",
+      "P"
+    ]
+  },
+  "Y": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Y",
+    "next_nodes": [
+      "Z"
+    ],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": null,
+    "target_children": [
+      "O"
+    ]
+  },
+  "Z": {
+    "full_path": "freeform.doc.commercial-invoice-list-dict.Z",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": null
+  }
+}

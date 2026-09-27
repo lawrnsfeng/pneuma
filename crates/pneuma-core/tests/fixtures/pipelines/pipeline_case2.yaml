@@ -1,0 +1,41 @@
+---
+pipeline_id: freeform.doc.commercial-invoice-case2
+start: X
+components:
+  - node_id: X
+    name: freeform.doc.commercial-invoice.list
+    version: latest
+    type: Model
+    children:
+      - Y
+  - node_id: Y
+    name: freeform.page.commercial-invoice.Y
+    version: latest
+    type: ListAggregator
+    start: A
+    children:
+      - end
+    components:
+      - node_id: A
+        name: freeform.page.commercial-invoice.A
+        type: Model
+        children:
+          - B
+          - C
+          - D
+      - node_id: B
+        name: freeform.page.commercial-invoice.B
+        type: Model
+        children:
+          - C
+          - D
+      - node_id: C
+        name: freeform.page.commercial-invoice.C
+        type: Model
+        children:
+          - D
+      - node_id: D
+        name: freeform.page.commercial-invoice.D
+        type: Model
+        children:
+          - end

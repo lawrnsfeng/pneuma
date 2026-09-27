@@ -1,0 +1,47 @@
+{
+  "A": {
+    "full_path": "invoice.doc.default.A",
+    "next_nodes": [
+      "X"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": null
+  },
+  "B": {
+    "full_path": "invoice.doc.default.X.B",
+    "next_nodes": [
+      "C"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "X"
+  },
+  "C": {
+    "full_path": "invoice.doc.default.X.C",
+    "next_nodes": [],
+    "nth": 2,
+    "num_prerequisites": 1,
+    "parent_id": "X"
+  },
+  "D": {
+    "full_path": "invoice.doc.default.D",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": null
+  },
+  "X": {
+    "full_path": "invoice.doc.default.X",
+    "next_nodes": [
+      "D"
+    ],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": null,
+    "target_children": [
+      "C"
+    ]
+  }
+}

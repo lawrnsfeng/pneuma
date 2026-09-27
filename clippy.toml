@@ -1,0 +1,2 @@
+# No project-specific clippy configuration yet — lints are controlled via
+# #![deny(...)] attributes in each crate's lib.rs and -D warnings in CI.

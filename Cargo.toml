@@ -1,0 +1,130 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+# None of these go to crates.io. Saying so is what lets `cargo deny`'s
+# `allow-wildcard-paths` apply: it deliberately refuses to exempt path
+# dependencies in a *publishable* crate, because crates.io would reject the
+# published manifest. Marking them unpublishable is the honest description of
+# what they are, and it makes the wildcard rule mean what it should.
+publish = false
+
+# Only the dependencies actually needed right now (pneuma-core) are pinned here.
+# Future crates (pneuma-proto, pneuma-engine, transport/storage adapters, and the
+# service binaries) add their own pins to this table as they're built — see
+# the original plan for the full eventual dependency set. Do not pre-declare pins for
+# crates that don't exist yet.
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+compact_str = { version = "0.8", features = ["serde"] }
+thiserror = "2"
+# Builder API, deliberately not `derive`. A `#[derive(Parser)]` expands into
+# code whose line map points at the struct, and its help/version/exit arms can
+# never run under `cargo test` -- against a 100% gate there is no remedy,
+# because "restructure rather than exclude" has no move against macro-generated
+# lines. `Command::try_get_matches_from` is ordinary code that never touches the
+# process and never exits, so every subcommand and every rejection is a unit
+# test.
+clap = { version = "4", default-features = false, features = [
+    "std", "help", "usage", "error-context", "suggestions",
+] }
+# derive + postgres only: no runtime-tokio, no TLS backend. This is what lets
+# pneuma-core carry #[derive(sqlx::Type)] on NodeStatus while staying I/O-free.
+sqlx = { version = "0.8", default-features = false, features = ["derive", "postgres"] }
+proptest = "1"
+serde_yaml = "0.9"
+# Dyn-safe async traits; matches the gateway, which uses it for HealthCheckable.
+async-trait = "0.1"
+tokio = { version = "1", default-features = false }
+# Redacts credentials in Debug output; see the design notes 12.
+secrecy = "0.10"
+# The AMQP client `pneuma-transport` holds and `pneuma-amqp` is CI-forbidden from
+# holding. `rustls` rather than `native-tls` for the same reason every other
+# client here uses it: one TLS stack in the image, and no dependency on the
+# host's OpenSSL.
+#
+# `rustls--ring`, not the plain `rustls` feature, and this is load-bearing.
+# `rustls` pulls `tcp-stream`'s default `rustls--aws_lc_rs`, which turns on
+# rustls's `aws_lc_rs` feature *alongside* the `ring` that sqlx, reqwest and
+# mongodb already enable. With both on, `ClientConfig::builder()` cannot pick a
+# provider and **panics** -- "Could not automatically determine the
+# process-level CryptoProvider". So any binary linking this crate and a database
+# client would abort on its first `amqps://` connection, which is not something
+# a reconnect supervisor can retry. It also keeps the promise the paragraph
+# above makes: one TLS stack, and no `aws-lc-sys` cmake/C build in the image.
+lapin = { version = "4", default-features = false, features = ["rustls--ring", "tokio"] }
+futures-lite = "2"
+# The NATS client `pneuma-nats` is CI-forbidden from holding.
+# `pneuma-driver` is where it lives.
+#
+# 0.50 rather than the 0.42 `cargo add` first resolved to, and the gate is why:
+# 0.42 depends on `rustls-native-certs 0.7`, which is not optional and which
+# pulls the unmaintained `rustls-pemfile` (RUSTSEC-2025-0134) and
+# `rustls-webpki 0.102.8` (RUSTSEC-2026-0049, faulty CRL distribution-point
+# matching). Neither could be feature-gated away.
+#
+# Its default features are `ring`, not `aws-lc-rs`, which matters for the same
+# reason lapin's do: two crypto providers enabled at once make
+# `ClientConfig::builder()` panic.
+async-nats = "0.50"
+# Needed by pneuma-proto for BackendMessage.timestamp. `clock` is required and
+# must stay: IsoTimestamp::now and its Default impl call Utc::now, matching
+# the original's `Field(default_factory=lambda: datetime.now(UTC))`. Dropping it to
+# shed the iana-time-zone dependency breaks the build.
+chrono = { version = "0.4", default-features = false, features = ["std", "serde", "clock"] }
+# The HTTP server every binary's health endpoints run on. `pneuma-serve` owns
+# the one copy; `pneuma-telemetry` stays deliberately HTTP-free, which is what
+# lets its aggregation be tested without binding a port.
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+# `CancellationToken`. A shutdown signal has to reach a server future, a ticker
+# and every task at once, and a token is the one primitive that does all three
+# without each of them owning a channel receiver.
+tokio-util = { version = "0.7", default-features = false }
+# `ServiceExt::oneshot`, so every route is a unit test against a `Router` rather
+# than against a bound port. A `Router` is a `tower::Service`; that is the whole
+# reason the routing is testable at all.
+tower = { version = "0.5", default-features = false, features = ["util"] }
+# Collecting a response body in tests. axum 0.8's body is `http_body_util`'s.
+http-body-util = "0.1"
+
+# The gateway's Termination.id, and the `/terminations/{termination_id}` route
+# that parses Path<Uuid> -- which is why a malformed id is rejected at
+# extraction rather than reaching a handler (the defect notes 13).
+uuid = { version = "1", default-features = false, features = ["std", "serde"] }
+
+# Debug information, which is what makes a `target` directory large enough to
+# fill a disk. Measured on this workspace: 63 test and binary artifacts over
+# 10 MB, 3.0 GB between them, because every test binary statically links its
+# dependencies *and* embeds a full copy of their DWARF -- 15 crates' worth of
+# integration tests each carrying their own copy of mongodb, sqlx and tokio.
+# A gate run peaked at 5.6 GB and twice ran the disk out, which fails as
+# `No space left on device` and then a linker bus error twenty minutes in.
+#
+# Both settings below keep every line number. `line-tables-only` drops the type
+# and variable DIEs a step debugger needs and keeps the line programs that
+# panics, backtraces and `cargo tarpaulin`'s line attribution read -- so the
+# coverage gate still means exactly what it meant, which was verified by
+# re-running it rather than assumed. `unpacked` stops the remaining DWARF being
+# copied into each binary: it stays in the `.o` files beside them, shared.
+#
+# If a step debugger is ever needed, `cargo build --config
+# 'profile.dev.debug=2'` restores full information for one invocation without
+# editing this file.
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+
+# `profile.test` inherits from `profile.dev`, and the test binaries are the bulk
+# of what is built here -- stated rather than left implicit, because the whole
+# reason for the settings above is what `cargo test` produces.
+
+[profile.release]
+# `symbols`, not `debuginfo`. The release profile is already `debug = 0`, so
+# there is no DWARF for `strip = "debuginfo"` to remove -- it was a no-op
+# dressed as a saving. What is actually there is the symbol table, and that is
+# what this removes.
+strip = "symbols"

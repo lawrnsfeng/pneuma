@@ -1,0 +1,36 @@
+---
+pipeline_id: invoice.doc.default
+start: A
+components:
+  - node_id: A
+    name: invoice.doc.default.A
+    version: latest
+    type: Model
+    children:
+      - X
+  - node_id: X
+    name: list_aggregator
+    version: latest
+    type: ListAggregator
+    start: B
+    components:
+      - node_id: B
+        name: invoice.doc.default.B
+        version: latest
+        type: Model
+        children:
+          - C
+      - node_id: C
+        name: invoice.doc.default.C
+        version: latest
+        type: Model
+        children:
+          - end
+    children:
+      - D
+  - node_id: D
+    name: invoice.doc.default.D
+    version: latest
+    type: Model
+    children:
+      - end

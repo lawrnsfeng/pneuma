@@ -1,0 +1,56 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+#
+# Adopted verbatim from ../wonderful/.pre-commit-config.yaml — its --workspace
+# flags already match this project's Cargo workspace layout. Deliberately does
+# NOT run cargo-tarpaulin here: coverage instrumentation is meaningfully slower
+# than a plain `cargo test`, so the 100% gate lives in CI only, where it's
+# actually enforced as a merge blocker, not paid on every local commit.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args:
+          - --maxkb=1000
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-toml
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt (auto-fix)
+        entry: bash -c 'cargo fmt --all'
+        language: system
+        types: [rust]
+        pass_filenames: false
+        always_run: true
+
+      - id: cargo-clippy-fix
+        name: cargo clippy (auto-fix safe)
+        entry: bash -c 'cargo clippy --workspace --all-targets --fix --allow-dirty --allow-staged'
+        language: system
+        types: [rust]
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
+      - id: cargo-clippy
+        name: cargo clippy (deny warnings)
+        entry: bash -c 'cargo clippy --workspace --all-targets -- -D warnings'
+        language: system
+        types: [rust]
+        pass_filenames: false
+        always_run: true
+
+      - id: cargo-test
+        name: cargo test
+        entry: bash -c 'cargo test --workspace'
+        language: system
+        types: [rust]
+        pass_filenames: false
+        always_run: true

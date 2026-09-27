@@ -1,0 +1,91 @@
+{
+  "A": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.A",
+    "next_nodes": [
+      "Dict"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": null
+  },
+  "B": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.B",
+    "next_nodes": [
+      "Con1"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "Dict"
+  },
+  "C": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.C",
+    "next_nodes": [
+      "Con2"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "Dict"
+  },
+  "Con1": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.Con1",
+    "next_nodes": [
+      "E",
+      "F"
+    ],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Dict"
+  },
+  "Con2": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.Con2",
+    "next_nodes": [
+      "T",
+      "Z"
+    ],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Dict"
+  },
+  "Dict": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": 4,
+    "num_prerequisites": 1,
+    "parent_id": null,
+    "target_children": [
+      "E",
+      "F",
+      "T",
+      "Z"
+    ]
+  },
+  "E": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.E",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Dict"
+  },
+  "F": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.F",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Dict"
+  },
+  "T": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.T",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Dict"
+  },
+  "Z": {
+    "full_path": "freeform.doc.commercial-invoice-condition-dict.Dict.Z",
+    "next_nodes": [],
+    "nth": 1,
+    "num_prerequisites": 1,
+    "parent_id": "Dict"
+  }
+}

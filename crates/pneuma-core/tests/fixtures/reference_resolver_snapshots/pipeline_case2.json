@@ -1,0 +1,59 @@
+{
+  "A": {
+    "full_path": "freeform.doc.commercial-invoice-case2.Y.A",
+    "next_nodes": [
+      "B",
+      "C",
+      "D"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": "Y"
+  },
+  "B": {
+    "full_path": "freeform.doc.commercial-invoice-case2.Y.B",
+    "next_nodes": [
+      "C",
+      "D"
+    ],
+    "nth": 2,
+    "num_prerequisites": 1,
+    "parent_id": "Y"
+  },
+  "C": {
+    "full_path": "freeform.doc.commercial-invoice-case2.Y.C",
+    "next_nodes": [
+      "D"
+    ],
+    "nth": 3,
+    "num_prerequisites": 2,
+    "parent_id": "Y"
+  },
+  "D": {
+    "full_path": "freeform.doc.commercial-invoice-case2.Y.D",
+    "next_nodes": [],
+    "nth": 4,
+    "num_prerequisites": 3,
+    "parent_id": "Y"
+  },
+  "X": {
+    "full_path": "freeform.doc.commercial-invoice-case2.X",
+    "next_nodes": [
+      "Y"
+    ],
+    "nth": 1,
+    "num_prerequisites": 0,
+    "parent_id": null
+  },
+  "Y": {
+    "full_path": "freeform.doc.commercial-invoice-case2.Y",
+    "next_nodes": [],
+    "nth": 1,
+    "num_children": "MAP",
+    "num_prerequisites": 1,
+    "parent_id": null,
+    "target_children": [
+      "D"
+    ]
+  }
+}
