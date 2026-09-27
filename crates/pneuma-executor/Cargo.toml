@@ -1,0 +1,32 @@
+[package]
+name = "pneuma-executor"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "NATS to Seldon: call a component, publish what it said"
+
+[dependencies]
+pneuma-config = { path = "../pneuma-config" }
+pneuma-core = { path = "../pneuma-core" }
+pneuma-nats = { path = "../pneuma-nats" }
+pneuma-proto = { path = "../pneuma-proto" }
+pneuma-serve = { path = "../pneuma-serve" }
+async-nats = { workspace = true }
+futures-lite = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = [
+    "rt", "rt-multi-thread", "macros", "net", "signal", "sync", "time",
+] }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+axum = { workspace = true }
+# The pair that matters: each service alone is only proved against a fake, and
+# the thing worth knowing is that the subject one writes is the subject the
+# other reads.
+pneuma-broker = { path = "../pneuma-broker" }
