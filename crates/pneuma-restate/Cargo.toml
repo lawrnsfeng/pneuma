@@ -1,0 +1,50 @@
+[package]
+name = "pneuma-restate"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Runs pneuma pipelines as durable Restate handlers"
+
+[dependencies]
+pneuma-core = { path = "../pneuma-core" }
+pneuma-proto = { path = "../pneuma-proto" }
+pneuma-runner = { path = "../pneuma-runner" }
+# The audit mirror. `pneuma-restate` has no `forbid-deps` entry -- it is a leaf
+# binary and is meant to link what it needs -- so the database arrives here
+# rather than in the driver crate the gate holds I/O-free.
+pneuma-mirror = { path = "../pneuma-mirror" }
+sqlx = { version = "0.8", default-features = false, features = [
+    "derive", "postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json",
+] }
+secrecy = { workspace = true }
+restate-sdk = "0.11.1"
+# `http2` because the SDK's own endpoint speaks h2c -- HTTP/2 with prior
+# knowledge, no upgrade -- so a default HTTP/1.1 client cannot talk to it at
+# all. Component calls are ordinary HTTP/1.1; this is for reaching the endpoint
+# in tests.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "http2"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = "1"
+serde = { workspace = true }
+# The binary needs a runtime; the library does not name one.
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
+# The handler tests read back the rows the mirror wrote, and migrate the schema
+# they read them from. A dev dependency and not a normal one: nothing in `src/`
+# names the store -- the mirror is what writes, and it carries its own
+# statements.
+pneuma-store = { path = "../pneuma-store" }
+# A deliberately Restate-unaware component, which is the point of VERDICT §8.
+# Only the tests name `ScheduleError` and `FrameId`; `disposition` matched
+# `DriveError::Schedule(_)` without naming the type, so this was a normal
+# dependency shipping in the production graph for a test.
+pneuma-interpreter = { path = "../pneuma-interpreter" }
+axum = "0.8"
+# For a body stream that fails partway, which is the only way to produce a
+# mid-response transport error from a component.
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+serde_yaml = "0.9"
