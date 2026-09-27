@@ -1,0 +1,751 @@
+name: CI
+
+on:
+  push:
+    # Both, so a repo initialised with either default branch name is covered
+    # and a direct push to the default branch never lands unverified.
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  lint:
+    name: fmt + clippy
+    runs-on: ubuntu-latest
+    # The toolchain and the tools are pinned by the same argument this file
+    # already makes for `restatedev/restate:1.7.8`: an unpinned `@stable` or
+    # `cargo install` breaks an unrelated pull request the day upstream
+    # releases, and the failure is not reproducible from the commit that saw
+    # it. 1.97.1 is what the workspace is actually built and gated with
+    # locally, so CI and a developer machine agree by construction rather than
+    # by luck. There is no `rust-version` in any manifest, so this is a
+    # reproducibility pin and not an MSRV claim.
+    steps:
+      - uses: actions/checkout@v4
+
+      # Before the toolchain, deliberately. These are repo-wide shell guards
+      # that need no Rust, and putting them after `cargo fmt` meant one
+      # misformatted file stopped them running and their status was never
+      # reported -- a guard that can be masked by an unrelated failure is
+      # reported-but-not-run, which is the thing this repository keeps finding.
+      - name: Determinism (no randomly-ordered containers)
+        run: ./scripts/forbid-nondeterminism.sh
+      - name: Every crate has a coverage job
+        run: ./scripts/ci-covers-every-crate.sh
+
+      - uses: dtolnay/rust-toolchain@1.97.1
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      # Broken intra-doc links compile fine and only fail when someone builds
+      # docs, so they land silently. A `SecretString` link with no import in
+      # scope got through exactly that way.
+      - name: Docs (broken intra-doc links are errors)
+        run: cargo doc --workspace --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+      # Doctests: every other job is `cargo tarpaulin`, whose default run-types
+      # skip them, so nothing in CI compiled a doc example. There are none
+      # today -- every fenced block in the crate docs is `text` -- which makes this a guard for the first one written.
+      - run: cargo test --workspace --doc
+
+
+  deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Not `cargo-deny-action`: it pins its own cargo-deny (0.19.0 at
+      # v2.0.15) while `scripts/verify.sh` invokes whatever is installed
+      # locally, which is 0.20.2 here. That is the same local-vs-CI split this
+      # workflow's sibling commit set out to close, reintroduced one layer
+      # down. Installing a pinned version and running the identical command
+      # makes both sides literally the same check.
+      - run: cargo install cargo-deny --version 0.20.2 --locked
+      - run: cargo deny check
+
+  core-coverage:
+    name: pneuma-core coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # pneuma-core is documented as a pure, I/O-free domain kernel. The
+      # deliberate exception is sqlx's `derive` + `postgres` features on
+      # NodeStatus (no runtime, no TLS), which is why the pattern forbids
+      # async runtimes and clients rather than sqlx itself: a future
+      # `runtime-tokio` feature would reintroduce I/O and is caught by
+      # `tokio`, which is the invariant that actually matters.
+      - name: Verify pneuma-core stays I/O-free
+        run: ./scripts/forbid-deps.sh pneuma-core 'tokio|async-std|smol|async-global-executor|futures-executor|async-nats|nats|amqp|lapin|mongodb|redis|reqwest|hyper'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-core --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-core-coverage
+          path: cobertura.xml
+
+  proto-coverage:
+    name: pneuma-proto coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-proto --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-proto-coverage
+          path: cobertura.xml
+
+  config-coverage:
+    name: pneuma-config coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-config --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-config-coverage
+          path: cobertura.xml
+
+  telemetry-coverage:
+    name: pneuma-telemetry coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-telemetry --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-telemetry-coverage
+          path: cobertura.xml
+
+  admission-coverage:
+    name: pneuma-admission coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # No sibling checkout: `accept` is pure and its fixture is vendored under
+    # `tests/fixtures/`. It was `include_str!`d from the original four
+    # directories up, which compiles only on a machine that has that clone --
+    # so this job, and `lint` ahead of it, could not have built the test target
+    # at all.
+    #
+    # A Restate container, though, for two tests. `tests/restate.rs` really
+    # talks to the ingress: a stub agrees with whatever the file asserts, so on
+    # its own it would pin this crate's beliefs about Restate rather than
+    # Restate's behaviour -- and the statuses it classifies come from a
+    # measurement in the design notes, which is only worth anything if
+    # something re-checks it. And `tests/e2e.rs` drives a submission from the
+    # door through the real server into a real handler, which is the one seam
+    # every other test in this workspace stubs one side of. Both fail rather
+    # than skip without a container, the stance every integration test here
+    # takes, so this block is what keeps them honest instead of red.
+    services:
+      restate:
+        image: restatedev/restate:1.7.8
+        # `--add-host`, because `tests/e2e.rs` serves the SDK endpoint inside
+        # the job and the server has to dial *back* into it to invoke the
+        # handler. The same note as `restate-coverage`'s applies: verified
+        # locally, not yet on a GitHub runner, where service-container
+        # networking differs. A failure to register says so rather than
+        # skipping.
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+          --health-cmd "curl -sf http://localhost:9070/health || exit 1"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+        ports:
+          - 18080:8080
+          - 19070:9070
+      # And Postgres, because `tests/store.rs` drives the whole path against
+      # the *real* queue and `tests/boot.rs` starts the whole process against
+      # it. Until those existed the only implementor of either trait was a test
+      # fake, so the router and the dispatcher were exported and unreachable
+      # from anything that runs -- and dead wiring with a thorough test looks
+      # exactly like live wiring.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-admission --out xml
+        env:
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-admission-coverage
+          path: cobertura.xml
+
+  executor-coverage:
+    name: pneuma-executor coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # NATS, because the pair that matters is this service and the tenant
+    # broker: each alone is only proved against a fake, and the thing worth
+    # knowing is that the subject one writes is the subject the other reads.
+    services:
+      nats:
+        image: nats:2.10
+        ports: ["4222:4222"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-executor --out xml
+        env:
+          PNEUMA_TEST_NATS_URL: nats://127.0.0.1:4222
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-executor-coverage
+          path: cobertura.xml
+
+  broker-coverage:
+    name: pneuma-broker coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # NATS, for the one thing a fake cannot answer: whether the subject this
+    # service publishes to is one a subscriber on the tenant's subject actually
+    # receives. That is the whole service, and it is a property of the broker's
+    # subject grammar rather than of this crate.
+    services:
+      nats:
+        image: nats:2.10
+        ports: ["4222:4222"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-broker --out xml
+        env:
+          PNEUMA_TEST_NATS_URL: nats://127.0.0.1:4222
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-broker-coverage
+          path: cobertura.xml
+
+  driver-coverage:
+    name: pneuma-driver coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # NATS, for the two things a fake cannot answer: whether a message
+    # published to a component's own subject is one a subscriber on that
+    # subject receives, and whether a publish that only reached a local buffer
+    # counts as sent. Both were measured wrong first.
+    services:
+      nats:
+        image: nats:2.10
+        ports: ["4222:4222"]
+      # Mongo, because `tests/service.rs` reads the run document `pneuma-intake`
+      # wrote and asserts the status this service writes back onto it. Pinned
+      # like everywhere else here: an unpinned image breaks this gate on an
+      # unrelated pull request.
+      mongo:
+        image: mongo:5.0.28
+        ports: ["27017:27017"]
+        # A health check like every other service here. Without one the step
+        # starts as soon as the container is created, and mongod takes seconds
+        # to accept connections -- so the first test to connect fails, and this
+        # is a 100% coverage gate, so the flake fails the pull request.
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s --health-retries 10
+      # And Postgres, because the driver now mirrors what a run did into
+      # `node_run` and refuses to start without a database it can reach *and*
+      # write to. Without it every test in `tests/service.rs` fails at boot,
+      # which is the point: a replica that mirrors nothing must not look like
+      # one that works.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # What this crate may not *write*, as opposed to what it may not link.
+      # It holds a run's `Execution` in memory, and the obvious cure for losing
+      # that on a crash reinstates the barrier design the port removed.
+      - name: Forbid the barrier vocabulary
+        run: >-
+          ./scripts/forbid-symbols.sh pneuma-driver
+          'BarrierStore|complete_prerequisite|expected_children|skip_child|refcount'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-driver --out xml
+        env:
+          PNEUMA_TEST_NATS_URL: nats://127.0.0.1:4222
+          PNEUMA_TEST_MONGO_URL: mongodb://127.0.0.1:27017
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-driver-coverage
+          path: cobertura.xml
+
+  intake-coverage:
+    name: pneuma-intake coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # RabbitMQ, because `tests/supervise.rs` and `tests/service.rs` drive a real
+    # attach/pump/settle cycle against it -- the two things a fake cannot
+    # answer: whether a closed connection or a vanished queue really ends the
+    # attachment, and whether a rejected message really reaches the DLQ.
+    services:
+      rabbitmq:
+        image: rabbitmq:3.13
+        ports: ["5672:5672"]
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s --health-timeout 10s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-intake --out xml
+        env:
+          PNEUMA_TEST_AMQP_URL: amqp://guest:guest@127.0.0.1:5672/%2f
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-intake-coverage
+          path: cobertura.xml
+
+  transport-coverage:
+    name: pneuma-transport coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # The reconnect rule and the settlement rule are decided without a broker,
+    # so the branches only a misbehaving broker reaches are ordinary unit tests.
+    # RabbitMQ is here for the two things a fake cannot answer: whether it
+    # accepts these queue arguments, and whether a delivery dropped without
+    # being settled really does come back.
+    services:
+      rabbitmq:
+        image: rabbitmq:3.13
+        ports: ["5672:5672"]
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s --health-timeout 10s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-transport --out xml
+        env:
+          PNEUMA_TEST_AMQP_URL: amqp://guest:guest@127.0.0.1:5672/%2f
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-transport-coverage
+          path: cobertura.xml
+
+  serve-coverage:
+    name: pneuma-serve coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # No service containers: everything routing is tested through
+    # `ServiceExt::oneshot` against a `Router`. Of the tests that need a real
+    # process, two bind 127.0.0.1:0 and one sends this process a SIGTERM.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-serve --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-serve-coverage
+          path: cobertura.xml
+
+  fairness-coverage:
+    name: pneuma-fairness coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-fairness --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-fairness-coverage
+          path: cobertura.xml
+
+  nats-coverage:
+    name: pneuma-nats coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # The crate doc says pneuma-nats is "deliberately client-free" and that
+      # connection handling "will not compile into this crate". Without a guard
+      # that is a comment, not a constraint.
+      - name: Verify pneuma-nats stays client-free
+        run: ./scripts/forbid-deps.sh pneuma-nats 'tokio|async-std|smol|async-global-executor|futures-executor|async-nats|nats|amqp|lapin|mongodb|redis|reqwest|hyper'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-nats --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-nats-coverage
+          path: cobertura.xml
+
+  amqp-coverage:
+    name: pneuma-amqp coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # Same posture as pneuma-nats: names and validation only, no client.
+      # Note this crate's own name matches the `amqp` pattern -- the guard
+      # strips cargo tree's root line, which is what makes that safe.
+      - name: Verify pneuma-amqp stays client-free
+        run: ./scripts/forbid-deps.sh pneuma-amqp 'tokio|async-std|smol|async-global-executor|futures-executor|async-nats|nats|amqp|lapin|mongodb|redis|reqwest|hyper'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-amqp --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-amqp-coverage
+          path: cobertura.xml
+
+  gateway-client-coverage:
+    name: pneuma-gateway-client coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # Contract only: paths and wire types. Choosing a transport belongs to the
+      # caller, so no HTTP client may appear here.
+      - name: Verify pneuma-gateway-client stays transport-free
+        run: ./scripts/forbid-deps.sh pneuma-gateway-client 'tokio|async-std|smol|async-global-executor|futures-executor|async-nats|nats|amqp|lapin|mongodb|redis|reqwest|hyper|axum'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-gateway-client --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-gateway-client-coverage
+          path: cobertura.xml
+
+  store-coverage:
+    name: pneuma-store coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      # Pinned to the version the dev compose runs. Standalone, with no
+      # --replSet, which is deliberate: it is what the tests should exercise,
+      # and whether production is a replica set is an open question the
+      # defect notes leave for whoever decides whether majority concerns mean
+      # anything.
+      mongo:
+        image: mongo:5.0.28
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # The schema test fails rather than skips without a database, on purpose:
+      # a schema check that silently passes reports success for work it did not
+      # do. So the gate needs the service container above.
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-store --out xml
+        env:
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+          PNEUMA_TEST_MONGO_URL: mongodb://127.0.0.1:27017
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-store-coverage
+          path: cobertura.xml
+
+  migrate-coverage:
+    name: pneuma-migrate coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # Introspection reads a real schema, and the property this crate exists for
+    # -- that the same migrations in two differently-named schemas fingerprint
+    # identical -- can only be shown by a server rendering the definitions.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      # Both halves of the schema, because both halves are under the 100% gate.
+      # `tests/mongo.rs` and the `mongo index|duplicates` arms of `run.rs`
+      # panic without a server rather than skipping, on purpose -- a check that
+      # silently passes reports success for work it did not do -- so the job
+      # needs this container to be green at all, never mind at 100%.
+      mongo:
+        image: mongo:5.0.28
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-migrate --out xml
+        env:
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+          PNEUMA_TEST_MONGO_URL: mongodb://127.0.0.1:27017
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-migrate-coverage
+          path: cobertura.xml
+
+  janitor-coverage:
+    name: pneuma-janitor coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # Both databases, for the same reason pneuma-store needs them: every test
+    # in this crate is an integration test that fails rather than skips without
+    # them. Without this job nothing on CI runs them at all, and a regression in
+    # the archive-before-delete ordering would merge green.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      mongo:
+        image: mongo:5.0.28
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-janitor --out xml
+        env:
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+          PNEUMA_TEST_MONGO_URL: mongodb://127.0.0.1:27017
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-janitor-coverage
+          path: cobertura.xml
+
+  mirror-coverage:
+    name: pneuma-mirror coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    # Postgres, because every test in this crate is about what the *database*
+    # does: the self-referential foreign key on `parent_path`, the statements'
+    # terminal-status guards, and `ON CONFLICT (path) DO NOTHING` under a
+    # replay. A fake would agree with whatever the file believed about all
+    # three, which is the one thing this crate must not be tested against.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-mirror --out xml
+        env:
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-mirror-coverage
+          path: cobertura.xml
+
+  interpreter-coverage:
+    name: pneuma-interpreter coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # Scheduling decisions only. The driver -- and therefore the engine --
+      # lives elsewhere, which is what lets these rules survive a change of
+      # engine. `restate` is in the forbidden set for that reason.
+      - name: Verify pneuma-interpreter stays engine-free
+        run: ./scripts/forbid-deps.sh pneuma-interpreter 'tokio|async-std|smol|async-global-executor|futures-executor|async-nats|nats|amqp|lapin|mongodb|redis|reqwest|hyper|restate'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-interpreter --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-interpreter-coverage
+          path: cobertura.xml
+
+  runner-coverage:
+    name: pneuma-runner coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      # `Component` is a trait so the driver owns no transport: the same loop
+      # runs under Restate and under a plain client, and every branch of it is
+      # reachable from a fake. That is only true while this holds.
+      - name: Verify pneuma-runner owns no transport
+        run: ./scripts/forbid-deps.sh pneuma-runner 'tokio|async-std|smol|async-global-executor|futures-executor|async-nats|nats|amqp|lapin|mongodb|redis|reqwest|hyper|restate|axum'
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-runner --out xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-runner-coverage
+          path: cobertura.xml
+
+  restate-coverage:
+    name: pneuma-restate coverage (100% gate)
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      # The handler tests drive a real server. `VERDICT.md` §2's claim -- that
+      # the aggregation barrier collapses because one replayed handler owns the
+      # run -- is a property of Restate, not of this code, so a mock would
+      # assert that the mock behaves as written.
+      restate:
+        # Pinned, like `mongo:5.0.28` and unlike the `:latest` this started as.
+        # An unpinned image breaks this gate on an unrelated pull request, and
+        # the failure is not reproducible from the commit that saw it.
+        image: restatedev/restate:1.7.8
+        # The server has to dial *back* into the job to reach the SDK endpoint
+        # the test serves, so it needs a name for the host. Verified locally;
+        # **not** yet verified on a GitHub runner, where service-container
+        # networking differs. If this job fails to register a deployment, that
+        # is the first thing to look at -- the test says so when it cannot
+        # reach the admin API rather than skipping.
+        # A health check, like every other service here. Without one the step
+        # can start before the admin port is open, and the job fails on timing
+        # rather than on anything in the diff.
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+          --health-cmd "curl -sf http://localhost:9070/health || exit 1"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+        ports:
+          - 18080:8080
+          - 19070:9070
+      # And Postgres, because the handler mirrors what a run did into
+      # `node_run`. Without it the mirror writes into nothing and the suite
+      # still passes -- which is precisely the state this port found the table
+      # in, and the reason the tests read the rows back rather than trusting
+      # that a write was issued.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pneuma
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-tarpaulin --version 0.37.2 --locked
+      - name: Run tests with 100% coverage gate
+        run: ./scripts/coverage.sh pneuma-restate --out xml
+        env:
+          PNEUMA_TEST_DATABASE_URL: postgres://postgres:pneuma@127.0.0.1:5432/postgres
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pneuma-restate-coverage
+          path: cobertura.xml
